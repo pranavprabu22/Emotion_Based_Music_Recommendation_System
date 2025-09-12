@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Emotion Detector + Music</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #d9a7c7, #fffcdc);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+
+    .container {
+      background: white;
+      padding: 40px;
+      border-radius: 18px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+      width: 90%;
+      max-width: 850px;
+      text-align: center;
+    }
+
+    h2 {
+      margin-bottom: 20px;
+      color: #333;
+    }
+
+    .upload-box {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      margin-bottom: 25px;
+      flex-wrap: wrap;
+    }
+
+    .upload-box input[type="file"] {
+      display: none;
+    }
+
+    .upload-label, .capture-btn {
+      padding: 12px 24px;
+      border: none;
+      background: linear-gradient(135deg, #43cea2, #185a9d);
+      color: white;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+      border-radius: 10px;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .upload-label:hover, .capture-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+    }
+
+    .result-section {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-top: 25px;
+      flex-wrap: wrap;
+    }
+
+    .result-section img {
+      border-radius: 14px;
+      max-width: 220px;
+      margin: 12px 20px;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+    }
+
+    .emotion-text {
+      font-size: 26px;
+      font-weight: bold;
+      color: #444;
+      margin-top: 15px;
+    }
+
+    #camera-section {
+      margin-top: 35px;
+      display: none;
+    }
+
+    #webcamFeed {
+      border-radius: 12px;
+      border: 2px solid #ccc;
+      width: 360px;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+    }
+
+    button.stop-btn {
+      margin-top: 12px;
+      background: crimson;
+      color: white;
+    }
+
+    /* 🎵 Spotify styles */
+    #music-section {
+      margin-top: 45px;
+    }
+
+    #emotion-display {
+      font-size: 22px;
+      margin-bottom: 15px;
+      color: #222;
+    }
+
+    #spotify-player iframe {
+      border-radius: 12px;
+      margin: 12px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>🎭 Facial Emotion Detector + 🎶 Music Recommender</h2>
+    <form method="POST" enctype="multipart/form-data">
+      <div class="upload-box">
+        <label class="upload-label" for="imageUpload">Upload Image</label>
+        <input type="file" id="imageUpload" name="image" accept="image/*" onchange="form.submit()">
+        <button type="button" class="capture-btn" onclick="openCamera()">Use Camera</button>
+      </div>
+    </form>
+
+    {% if emotion %}
+    <div class="result-section">
+      <img src="{{ uploaded_path }}" alt="Uploaded Face">
+
+      {% if emoji_path %}
+        <img src="{{ emoji_path }}" alt="Detected Emoji" id="activeEmoji" onerror="handleEmojiError('{{ emotion }}')">
+        <div class="emotion-text" id="fallbackText" style="display: none;"></div>
+      {% else %}
+        <div class="emotion-text">{{ emotion|capitalize }}</div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <div id="camera-section">
+      <h3>Real-Time Emotion Detection</h3>
+      <img id="webcamFeed" src="" />
+      <br>
+      <button onclick="stopCamera()" class="capture-btn stop-btn">Stop Camera</button>
+    </div>
+
+    <!-- 🎵 Music Section -->
+    <div id="music-section">
+      <h3 id="emotion-display">Detected Emotion: </h3>
+      <div id="spotify-player"></div>
+    </div>
+  </div>
+
+  <script>
+    const detected = "{{ emotion }}";
+    let lastEmotion = null;  // Track last emotion to prevent re-renders
+
+    function handleEmojiError(emotionText) {
+      const img = document.getElementById("activeEmoji");
+      if (img) img.style.display = "none";
+  
+      const fallbackText = document.getElementById("fallbackText");
+      if (fallbackText) {
+        fallbackText.textContent =
+          emotionText.charAt(0).toUpperCase() + emotionText.slice(1);
+        fallbackText.style.display = "block";
+      }
+    }
+  
+    let isCameraOn = false;
+  
+    function openCamera() {
+      if (!isCameraOn) {
+        document.getElementById("webcamFeed").src = "/video_feed";
+        document.getElementById("camera-section").style.display = "block";
+        isCameraOn = true;
+        fetchTracks(); // 🚀 immediate fetch when camera starts
+      }
+    }
+  
+    function stopCamera() {
+      if (isCameraOn) {
+        document.getElementById("webcamFeed").src = "";
+        document.getElementById("camera-section").style.display = "none";
+        isCameraOn = false;
+        fetch("/shutdown_camera");
+      }
+    }
+  
+    // 🎵 Poll backend for current tracks
+    async function fetchTracks() {
+      const response = await fetch("/current_tracks");
+      const data = await response.json();
+      console.log("Fetched tracks:", data); // debug
+  
+      if (data.emotion && data.emotion !== lastEmotion) {
+        lastEmotion = data.emotion;
+  
+        document.getElementById("emotion-display").innerText =
+          "Detected Emotion: " + data.emotion;
+  
+        const spotifyPlayer = document.getElementById("spotify-player");
+        spotifyPlayer.innerHTML = ""; // clear old players
+  
+        data.tracks.forEach((track) => {
+          const iframe = document.createElement("iframe");
+          iframe.src = track.embed_url;
+          iframe.width = "300";
+          iframe.height = "80";
+          iframe.frameBorder = "0";
+          iframe.allow = "encrypted-media; autoplay";
+          spotifyPlayer.appendChild(iframe);
+        });
+      }
+    }
+  
+    setInterval(fetchTracks, 2000);
+  </script>  
+</body>
+</html>
