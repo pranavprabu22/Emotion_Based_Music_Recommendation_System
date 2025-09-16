@@ -1,5 +1,8 @@
 # Emotion-Based Music Recommendation System
 
+
+## Summary 
+
 The Emotion-Based Music Recommendation System detects a user’s facial expressions in real time and recommends Spotify tracks that align with their emotional state. It integrates Ultralytics YOLO for emotion recognition, OpenCV for live video streaming, and the Spotify API for adaptive music selection, all served through a Flask web interface.
 
 The application captures frames from the webcam, detects the dominant emotion, maps it to valence–arousal features (such as happiness → high valence, sadness → low valence), and dynamically updates music recommendations. The web app overlays emotion labels on the video stream and refreshes tracks seamlessly as user emotions change.
