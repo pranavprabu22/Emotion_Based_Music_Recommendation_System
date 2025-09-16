@@ -1,6 +1,14 @@
 # Emotion-Based Music Recommendation System
 
-This project integrates real-time facial emotion recognition with the Spotify API to recommend music tracks that align with the detected emotional state of the user. It leverages computer vision for emotion detection and a Flask web application to serve the results.
+The Emotion-Based Music Recommendation System detects a user’s facial expressions in real time and recommends Spotify tracks that align with their emotional state. It integrates Ultralytics YOLO for emotion recognition, OpenCV for live video streaming, and the Spotify API for adaptive music selection, all served through a Flask web interface.
+
+The application captures frames from the webcam, detects the dominant emotion, maps it to valence–arousal features (such as happiness → high valence, sadness → low valence), and dynamically updates music recommendations. The web app overlays emotion labels on the video stream and refreshes tracks seamlessly as user emotions change.
+
+Development followed an iterative, experiment-driven process. Vision-based recognition was chosen over audio analysis due to better dataset availability and real-time integration potential. YOLO was selected after testing CNNs and MobileNet variants, balancing speed with robustness under varied conditions. Integration with OpenCV introduced latency challenges, solved by resizing frames and tuning inference intervals. Emotion-to-music mapping evolved from fixed genres to Spotify’s audio features (valence, energy), yielding more diverse and relevant results. Spotify API queries were refined to improve reliability, while Flask provided a lightweight but effective interface for real-time streaming and dynamic updates.
+
+Key learnings emphasized how feature representation bridges subjective emotions with structured computational inputs, how real-time detection requires careful system-level optimizations, and how robust API handling safeguards user experience. The project also surfaced ethical considerations around bias, personalization, and privacy in affective computing, reinforcing the need for transparency and user control. Iterative refinements highlighted modularity and extensibility, setting the stage for multi-user support, personalization, and deployment at scale.
+
+Planned enhancements include automatic playlist generation, multi-face emotion detection, cloud deployment, and personalized recommendations based on individual Spotify accounts.
 
 
 ## Features
